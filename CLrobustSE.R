@@ -21,7 +21,7 @@
 ##
 ### References:
 ##
-##    1. Mancl, L. A., & DeRouen, T. A. (2001). A Covariance estimator for GEE with improved
+##    1. Mancl, L. A., & DeRouen, T. A. (2001). A covariance estimator for GEE with improved
 ##         small-sample properties. Biometrics, 57, 126–134.
 ##
 ##    2. Miglioretti, D. L., & Heagerty, P. J. (2007). Marginal modeling of nonnested multilevel
@@ -40,8 +40,8 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     
     ## degree of freedom adjustment robust variance estimator
     dfc.adj <- function(M,N,K,dist,smalln) {
-      dfc0 <- (M/(M-1)) * ((N-1)/(N-K))  # Gaussian (Stata)
-      dfc1 <- M/(M-1)                    # Non-Gaussian (Stata)
+      dfc0 <- (M/(M-1)) * ((N-1)/(N-K))  # gaussian (Stata)
+      dfc1 <- M/(M-1)                    # non-gaussian (Stata)
       dfc2 <- M/(M-K)                    # Mancl & DeRouen
       
       if (smalln) return(dfc2) else
@@ -69,6 +69,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
   }
   
   if (identical(model.class, "lm")) {
+    ## set the distribution as 'gaussian' for lm objects
     dist <- "gaussian"
     
     vcovCL <- sndwch(model=fit.model, family=dist, rank=fit.model$rank,
@@ -112,7 +113,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     K.bin <- length(fit.model$optim$zero$par)     # binary model
     K.cnt <- length(fit.model$optim$count$par)    # truncated count model
         
-    ## Assemble bread and meat for sandwich estimator
+    ## assemble bread and meat for sandwich estimator
     vcov.all <- fit.model$vcov
     vcov.bin <- vcov.all[grep("^zero_",  rownames(vcov.all), value = FALSE), grep("^zero_",  colnames(vcov.all), value = FALSE)]
     vcov.cnt <- vcov.all[grep("^count_", rownames(vcov.all), value = FALSE), grep("^count_", colnames(vcov.all), value = FALSE)]
@@ -126,12 +127,12 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     vcovCL.cnt <- sndwch(model=fit.model, family=family.bin, rank=K.cnt,
                          id=dv.cnt.df$clusterid, vcv=vcov.cnt, estfn=estfun.cnt, small.n=small.sample)
 
-    ## Extract estimated regression coefficients
+    ## extract estimated regression coefficients
     coef.all <- coef(fit.model)
     coef.bin <- coef.all[grep("^zero_",  names(coef.all), value = FALSE)]
     coef.cnt <- coef.all[grep("^count_", names(coef.all), value = FALSE)]
     
-    ## Bundle submodel output
+    ## bundle submodel output
     res.bin <- list(summary=coeftest(fit.model, vcov=vcovCL.bin),
                     coef=coef.bin,
                     vcov=vcovCL.bin)
@@ -147,6 +148,6 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     stop("The model object provided is not currently supported.")  
   }
 
-  # Output result(s)
+  ## output result(s)
   return(res)
 }
