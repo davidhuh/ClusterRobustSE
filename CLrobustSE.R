@@ -1,13 +1,13 @@
 ### Description:
 ##   Calculates cluster robust standard error estimates from fixed-effect GLMs.
-##   This function supports R's built-in glm() and lm() functions as well as
+##   This function supports R's built-in glm() function as well as the
 ##   hurdle and zero-inflated count models from the pscl package.
 ##
 ###  Author: David Huh
 ##
 ###  Dependencies: lmtest, sandwich
 ##
-###  Arguments:  fit.model  = a fitted model object of class glm, lm, hurdle, or zeroinfl
+###  Arguments:  fit.model  = a fitted model object of class glm, hurdle, or zeroinfl
 ##               clusterid  = a vector defining which cluster each observation belongs to.
 ##                            Per Miglioretti & Heagerty (2007), in fully-nested designs,
 ##                            clustering should be defined at the top level.
@@ -45,8 +45,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
       dfc2 <- M/(M-K)                    # Mancl & DeRouen
       
       if (smalln) return(dfc2) else
-        if (dist=="gaussian") return(dfc0) else 
-          return(dfc1)
+        if (dist=="gaussian") return(dfc0) else return(dfc1)
     }
     
     N.obs <- length(id)            # number of observations
@@ -67,25 +66,13 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     return(vcovCL)
   }
   
-  if (identical(model.class, "lm")) {
-    ## set the distribution as 'gaussian' for lm objects
-    dist <- "gaussian"
-    
-    vcovCL <- sndwch(model=fit.model, family=dist, rank=fit.model$rank,
-                     id=clusterid, small.n=small.sample)
-    
-    ## bundle result for 'lm' model
-    res <- list(summary=coeftest(fit.model, vcov=vcovCL),
-                coef=coef(fit.model),
-                vcov=vcovCL)
-    
-  } else if (identical(model.class, c("glm","lm"))) {
+  if (identical(model.class, c("glm","lm"))) {
     ## ascertain the distribution type
     dist <- fit.model$family$family
     
     vcovCL <- sndwch(model=fit.model, family=dist, rank=fit.model$rank,
                      id=clusterid, small.n=small.sample)
-
+    
     ## bundle result for 'glm' model
     res <- list(summary=coeftest(fit.model, vcov=vcovCL),
                 coef=coef(fit.model),
@@ -97,7 +84,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     ## ascertain the family of each submodel
     family.bin <- fit.model$dist$zero
     family.cnt <- fit.model$dist$count
-
+    
     ## create separate binary and truncated count variables
     dv.rnd <- round(fit.model$y)
     dv.bin <- as.numeric(ifelse(dv.rnd > 0, 1, 0))
@@ -111,7 +98,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     ## total parameters (K) in each submodel
     K.bin <- length(fit.model$optim$zero$par)     # binary model
     K.cnt <- length(fit.model$optim$count$par)    # truncated count model
-        
+    
     ## assemble bread and meat for sandwich estimator
     vcov.all <- fit.model$vcov
     vcov.bin <- vcov.all[grep("^zero_",  rownames(vcov.all), value = FALSE), grep("^zero_",  colnames(vcov.all), value = FALSE)]
@@ -125,7 +112,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
                          id=dv.bin.df$clusterid, vcv=vcov.bin, estfn=estfun.bin, small.n=small.sample)
     vcovCL.cnt <- sndwch(model=fit.model, family=family.bin, rank=K.cnt,
                          id=dv.cnt.df$clusterid, vcv=vcov.cnt, estfn=estfun.cnt, small.n=small.sample)
-
+    
     ## extract estimated regression coefficients
     coef.all <- coef(fit.model)
     coef.bin <- coef.all[grep("^zero_",  names(coef.all), value = FALSE)]
@@ -146,7 +133,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
   } else {
     stop("The model object provided is not currently supported.")  
   }
-
+  
   ## output result(s)
   return(res)
 }
