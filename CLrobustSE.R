@@ -14,8 +14,7 @@
 ##             small.sample = apply the small-sample degrees-of-freedom correction suggested
 ##                            by Mancl & DeRouen (2001)
 ##
-###  Values:       sims = a matrix of simulations (rows: simulates, columns: predictor combo)
-##              summary = a regression summary based on cluster robust standard errors
+###  Values:    summary = a regression summary based on cluster robust standard errors
 ##                 coef = a vector of the mean coeficient estimates
 ##                 vcov = the cluster robust variance-covariance matrix
 ##
