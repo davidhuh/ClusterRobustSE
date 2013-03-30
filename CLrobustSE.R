@@ -47,7 +47,6 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
       if (smalln) return(dfc2) else
         if (dist=="gaussian") return(dfc0) else 
           return(dfc1)
-      }
     }
     
     N.obs <- length(id)            # number of observations
