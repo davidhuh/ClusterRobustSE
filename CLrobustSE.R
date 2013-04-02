@@ -15,7 +15,7 @@
 ##                            by Mancl & DeRouen (2001)
 ##
 ###  Values:    summary = a regression summary based on cluster robust standard errors
-##                 coef = a vector of the mean coeficient estimates
+##                 coef = a vector of mean coeficient estimates
 ##                 vcov = the cluster robust variance-covariance matrix
 ##
 ### References:
@@ -77,7 +77,7 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
                 coef=coef(fit.model),
                 vcov=vcovCL)
     
-  } else if (model.class=="hurdle" | model.class=="zeroinfl") {
+  } else if (model.class=="hurdle") {
     require(pscl, quietly=TRUE)
     
     ## ascertain the family of each submodel
@@ -100,8 +100,12 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     
     ## assemble bread and meat for sandwich estimator
     vcov.all <- fit.model$vcov
-    vcov.bin <- vcov.all[grep("^zero_",  rownames(vcov.all), value = FALSE), grep("^zero_",  colnames(vcov.all), value = FALSE)]
-    vcov.cnt <- vcov.all[grep("^count_", rownames(vcov.all), value = FALSE), grep("^count_", colnames(vcov.all), value = FALSE)]
+    
+    index.bin <-  grep("^zero_", rownames(vcov.all), value = FALSE)
+    index.cnt <-  grep("^count_", rownames(vcov.all), value = FALSE)
+    
+    vcov.bin <- vcov.all[index.bin, index.bin]
+    vcov.cnt <- vcov.all[index.cnt, index.cnt]
     
     estfun.all <- estfun(fit.model)
     estfun.bin <- estfun.all[!is.na(dv.df$dv.bin), grep("^zero_",  colnames(estfun.all), value = FALSE)]
@@ -112,25 +116,41 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
     vcovCL.cnt <- sndwch(model=fit.model, family=family.bin, rank=K.cnt,
                          id=dv.cnt.df$clusterid, vcv=vcov.cnt, estfn=estfun.cnt, small.n=small.sample)
     
-    ## extract estimated regression coefficients
-    coef.all <- coef(fit.model)
-    coef.bin <- coef.all[grep("^zero_",  names(coef.all), value = FALSE)]
-    coef.cnt <- coef.all[grep("^count_", names(coef.all), value = FALSE)]
+    ## merge covariance matrices
+    vcovCL <- vcov.all
+    vcovCL[index.bin, index.bin] <- vcovCL.bin
+    vcovCL[index.cnt, index.cnt] <- vcovCL.cnt
     
     ## bundle submodel output
-    res.bin <- list(summary=coeftest(fit.model, vcov=vcovCL.bin),
-                    coef=coef.bin,
-                    vcov=vcovCL.bin)
+    res <- list(summary=coeftest(fit.model, vcov=vcovCL),
+                coef=coef(fit.model),
+                vcov=vcovCL)
     
-    res.cnt <- list(summary=coeftest(fit.model, vcov=vcovCL.cnt),
-                    coef=coef.cnt,
-                    vcov=vcovCL.cnt)
+  } else if (model.class=="zeroinfl") {
+    require(pscl, quietly=TRUE)
     
-    res <- list(bin.model = res.bin,
-                cnt.model = res.cnt)
+    ## ascertain the family of the model
+    dist <- fit.model$dist
+        
+    ## total parameters (K) in each submodel
+    K.bin <- length(fit.model$coefficients$zero)     # binary model
+    K.cnt <- length(fit.model$coefficients$count)    # truncated count model
+    K.all <- K.bin + K.cnt
+    
+    ## assemble bread and meat for sandwich estimator
+    vcov.all <- fit.model$vcov
+    estfun.all <- estfun(fit.model)
+    
+    vcovCL <- sndwch(model=fit.model, family=dist, rank=K.all,
+                     id=clusterid, vcv=vcov.all, estfn=estfun.all, small.n=small.sample)
+    
+    ## bundle submodel output
+    res <- list(summary=coeftest(fit.model, vcov=vcovCL),
+                coef=coef(fit.model),
+                vcov=vcovCL)
     
   } else {
-    stop("The model object provided is not currently supported.")  
+    stop("The model object provided is not currently supported.")
   }
   
   ## output result(s)
