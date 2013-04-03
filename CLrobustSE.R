@@ -43,6 +43,11 @@ clrobustse <- function(fit.model, clusterid, small.sample=FALSE) {
       dfc1 <- M/(M-1)                    # non-gaussian (Stata)
       dfc2 <- M/(M-K)                    # Mancl & DeRouen
       
+      ## abort if the small sample degree of correction is negative
+      if (smalln & dfc2 <=0)
+        stop("Small sample correction unavailable since number of parameters exceeds clusters")
+      
+      ## return df correction
       if (smalln) return(dfc2) else
         if (dist=="gaussian") return(dfc0) else return(dfc1)
     }
